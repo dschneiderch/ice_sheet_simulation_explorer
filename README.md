@@ -50,11 +50,7 @@ ensemble.
 
 Click **"+ Add your own ensemble"** in the sidebar to upload a CSV of your own simulations and see them
 beside the published ones. The first column is the year, and each other column is one simulation holding
-cumulative **ice mass above flotation** (or its change) in Gt, with mass loss negative. Leave out changes in
-floating ice shelves: they don't change sea level, and IMBIE's observations of grounded ice don't see them.
-For ISMIP6-style output, use ice volume above flotation (`ivaf`) × your model's ice density, or `limaf`, not
-total ice volume or mass (`ivol`, `lim`, or summed `lithk`), which include ice shelves. Every study in the tool
-is compared this way:
+cumulative **ice mass above flotation** (or its change) in Gt, with mass loss negative:
 
 ```
 year,exp01,exp02,exp03
@@ -62,6 +58,20 @@ year,exp01,exp02,exp03
 2016,-231.4,-198.7,-260.2
 ...
 ```
+
+**Use mass above flotation, not total ice mass.** Changes in floating ice shelves don't change sea level,
+and IMBIE's observations of grounded ice don't see them, so they must be left out. Every study in the tool is
+compared this way. Which variable to use depends on your model output:
+
+| | ISMIP6-style output | ISMIP7-style output |
+|---|---|---|
+| **Use** | Ice volume above flotation, `ivaf` (m³), × your model's ice density `rhoi` (kg/m³), ÷ 10¹² → Gt. Equivalently `limaf` (kg; as in the ISMIP6-Greenland recalculated scalars, where `limaf` = `ivaf` × `rhoi`), or `limnsw` (kg) from your own scalar submission, ÷ 10¹² → Gt. | `limnsw` (kg), "land ice mass not displacing seawater", ÷ 10¹² → Gt. The ISMIP7 scalar-processing tool computes it as Σ max(H − h<sub>f</sub>, 0) × cell area × ρ<sub>ice</sub>, i.e. volume above flotation × your model's ice density. |
+| **Or, from sea-level contribution** | `sle` (m sea-level equivalent, as in the ISMIP6-Greenland recalculated scalars) × −362,500 Gt per m. Those files derive `sle` from `limaf` with an ocean area of 3.625 × 10¹⁴ m² and fresh-water density, i.e. 362.5 Gt per mm. (The ISMIP6-Antarctica computed scalars have no `sle`; use `ivaf` × `rhoi`.) | `slvaf` (m sea-level equivalent, from the ISMIP7 scalar-processing tool) × −362,500 Gt per m; it is derived from volume above flotation with the same 3.625 × 10¹⁴ m² ocean area. Avoid `slg20` and `sla20` here: they add bedrock and density corrections the other studies don't include. |
+| **Don't use** | Total ice volume or mass, `ivol` or `lim`, or summed thickness `lithk`: these include floating ice shelves. Grounded mass `limgr` also counts grounded ice below flotation, which doesn't change sea level. | Total ice mass `lim`, or summed thickness `lithk`: these include floating ice shelves. |
+
+A constant offset doesn't matter: the tool zeroes every series at the start of the averaging window.
+If you sum gridded thickness yourself instead, include only grounded ice above flotation, as above; masking
+to grounded ice alone isn't enough, because grounded ice below flotation doesn't change sea level either.
 
 After uploading, choose whether the simulations are of Antarctica or Greenland. Uploads stay in your
 browser tab; they are not stored on the server or shared with other visitors. A deliberately fake example

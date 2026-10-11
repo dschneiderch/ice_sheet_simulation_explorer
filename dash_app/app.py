@@ -247,10 +247,9 @@ upload_modal = html.Div(id="upload-modal", className="modal-backdrop", style={"d
         html.P(["Upload a CSV file whose ", html.B("first column is the year"), " and whose other columns are "
                 "your simulations, one per column, each holding ", html.B("cumulative ice mass above flotation (or "
                 "its change) in Gt"), " (mass loss negative). If using ISMIP7-style output, this should be ", 
-                html.Code("limnsw"), "; Every study in this tool is compared this way. The header row names ",
-                " the columns: ", html.Code("year"),
+                html.Code("limnsw"), ". Every study in this tool is compared this way. The header row names "
+                "the columns: ", html.Code("year"),
                 ", then an experiment name or number for each simulation."], className="lede"),
-        ]),
         html.Pre(UPLOAD_EXAMPLE, className="example"),
         html.P(f"Annual or finer time steps are fine. Up to {U.MAX_RUNS:,} simulations and "
                f"{U.MAX_BYTES // 1_000_000} MB per file, and up to {U.MAX_ENSEMBLES} ensembles at once, each "
