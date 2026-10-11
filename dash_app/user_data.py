@@ -23,6 +23,10 @@ from analysis import TS_END_YEAR, TS_QUANTILES, _fast_slope, weighted_quantiles
 from data import YEAR_GRID, proj_start
 
 MAX_BYTES = 5_000_000
+# Uploaded values must be Gt. Antarctica holds ~2.7e7 Gt of ice and Greenland
+# ~2.9e6 Gt, so anything beyond 1e8 can't be Gt; it is almost certainly kg
+# (limnsw and limaf come in kg), which would otherwise be read 1e12x too large.
+MAX_ABS_GT = 1e8
 MAX_RUNS = 1000
 YEAR_RANGE = (1800, 2500)
 MAX_ENSEMBLES = 5
@@ -70,6 +74,11 @@ def parse_upload(contents, filename):
         raise ValueError("No simulation column has at least 2 numeric values.")
     if vals.shape[1] > MAX_RUNS:
         raise ValueError(f"Found {vals.shape[1]} simulations; the limit is {MAX_RUNS}.")
+    biggest = float(np.nanmax(np.abs(vals.to_numpy(dtype=float))))
+    if biggest > MAX_ABS_GT:
+        raise ValueError(f"Values reach {biggest:.3g}, far more than any ice sheet's mass in Gt (Antarctica holds "
+                         "about 2.7e7 Gt). They look like kg -- ISMIP variables such as limnsw and limaf are in kg. "
+                         "Divide by 1e12 to convert to Gt and upload again.")
 
     order = np.argsort(years)
     years, vals = years[order], vals.to_numpy(dtype=float)[order]

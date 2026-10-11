@@ -246,8 +246,9 @@ upload_modal = html.Div(id="upload-modal", className="modal-backdrop", style={"d
         html.H2("Add your own ensemble"),
         html.P(["Upload a CSV file whose ", html.B("first column is the year"), " and whose other columns are "
                 "your simulations, one per column, each holding ", html.B("cumulative ice mass above flotation (or "
-                "its change) in Gt"), " (mass loss negative). If using ISMIP7-style output, this should be ", 
-                html.Code("limnsw"), ". Every study in this tool is compared this way. The header row names "
+                "its change) in Gt"), " (mass loss negative). If using ISMIP7-style output, this should be ",
+                html.Code("limnsw"), html.B(" converted from kg to Gt"), " (divide by 10¹²). Every study in this "
+                "tool is compared this way. The header row names "
                 "the columns: ", html.Code("year"),
                 ", then an experiment name or number for each simulation."], className="lede"),
         html.Pre(UPLOAD_EXAMPLE, className="example"),

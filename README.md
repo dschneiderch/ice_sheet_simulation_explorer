@@ -50,7 +50,10 @@ ensemble.
 
 Click **"+ Add your own ensemble"** in the sidebar to upload a CSV of your own simulations and see them
 beside the published ones. The first column is the year, and each other column is one simulation holding
-cumulative **ice mass above flotation** (or its change) in Gt, with mass loss negative:
+cumulative **ice mass above flotation** (or its change) **in Gt**, with mass loss negative. Values are
+read as Gt with no conversion, so convert first: `limnsw` and `limaf` are in kg (÷ 10¹²), `ivaf` is in m³
+(× ice density ÷ 10¹²), and sea-level equivalents are in m (× −362,500). An upload with values above 10⁸ is
+rejected as almost certainly kg:
 
 ```
 year,exp01,exp02,exp03
