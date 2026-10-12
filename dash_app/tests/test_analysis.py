@@ -11,7 +11,7 @@ import analysis as A
 from data import IMBIE, RUN_ID, RUN_VALS, RUN_YEARS, RUNS
 
 
-# ── run_rates ─────────────────────────────────────────────────────────────
+# ── stacked_rates / run_rates ─────────────────────────────────────────────
 
 # Gt/yr. Some runs have a true slope of exactly 0 (e.g. DeConto & Pollard
 # 2016 values that rise and fall symmetrically over 2000-2020), where both
@@ -20,12 +20,12 @@ ATOL = 1e-9
 
 
 def _rates(runs, lo, hi):
-    """run_rates on [(years, vals), ...], stacked end to end the way data.py
+    """stacked_rates on [(years, vals), ...], stacked end to end the way data.py
     stacks the bundled runs."""
     run_id = np.concatenate([np.full(len(y), i) for i, (y, _) in enumerate(runs)])
     years = np.concatenate([np.asarray(y, dtype=float) for y, _ in runs])
     vals = np.concatenate([np.asarray(v, dtype=float) for _, v in runs])
-    return A.run_rates(lo, hi, run_id, years, vals, len(runs))
+    return A.stacked_rates(lo, hi, run_id, years, vals, len(runs))
 
 
 def _linregress_slopes(runs, lo, hi):
@@ -40,7 +40,7 @@ def _linregress_slopes(runs, lo, hi):
     return out
 
 
-def test_run_rates_exact_slopes_with_different_time_steps():
+def test_stacked_rates_exact_slopes_with_different_time_steps():
     # Annual, half-yearly, and a run starting later -- each exactly linear.
     annual = np.arange(2010, 2021)
     half = np.arange(2010, 2020.5, 0.5)
@@ -52,7 +52,7 @@ def test_run_rates_exact_slopes_with_different_time_steps():
     np.testing.assert_allclose(out, [-100, 25, -7.5])
 
 
-def test_run_rates_points_outside_window_are_ignored():
+def test_stacked_rates_points_outside_window_are_ignored():
     # Slope 10 inside 2015-2020, but a jump outside it that would change a
     # fit over the whole run.
     y = np.arange(2000, 2031)
@@ -62,13 +62,13 @@ def test_run_rates_points_outside_window_are_ignored():
     np.testing.assert_allclose(out, [10])
 
 
-def test_run_rates_window_bounds_are_inclusive():
+def test_stacked_rates_window_bounds_are_inclusive():
     y = np.array([2015, 2016])
     out = _rates([(y, [0, 4])], 2015, 2016)
     np.testing.assert_allclose(out, [4])
 
 
-def test_run_rates_fewer_than_two_points_gives_nan():
+def test_stacked_rates_fewer_than_two_points_gives_nan():
     runs = [(np.arange(2015, 2021), np.arange(6.0)),  # 6 points in window
             ([2010, 2018, 2030], [0, 1, 2]),          # 1 point in window
             ([1990, 1991], [0, 1]),                   # none in window
@@ -80,7 +80,7 @@ def test_run_rates_fewer_than_two_points_gives_nan():
     assert out[3] == pytest.approx(1)
 
 
-def test_run_rates_trailing_runs_without_points_still_get_an_entry():
+def test_stacked_rates_trailing_runs_without_points_still_get_an_entry():
     # bincount would otherwise size its output by the largest run id seen.
     runs = [(np.arange(2015, 2021), np.arange(6.0)), ([1990, 1991], [0, 1])]
     out = _rates(runs, 2015, 2020)
@@ -88,7 +88,7 @@ def test_run_rates_trailing_runs_without_points_still_get_an_entry():
     assert np.isnan(out[1])
 
 
-def test_run_rates_matches_linregress_on_random_ragged_data():
+def test_stacked_rates_matches_linregress_on_random_ragged_data():
     rng = np.random.default_rng(0)
     runs = []
     for _ in range(200):
@@ -110,6 +110,20 @@ def test_run_rates_matches_linregress_on_bundled_data(lo, hi):
     assert out.shape == (len(RUNS),)
     np.testing.assert_allclose(out, _linregress_slopes(runs, lo, hi), rtol=1e-9, atol=ATOL, equal_nan=True)
 
+
+
+def test_run_rates_repeat_window_comes_from_cache():
+    A.run_rates.cache_clear()
+    first = A.run_rates(2012, 2021)
+    assert A.run_rates(2012, 2021) is first
+    assert A.run_rates.cache_info().hits == 1
+
+
+def test_run_rates_cached_array_is_read_only():
+    # Every request shares the cached array, so no caller may modify it.
+    out = A.run_rates(2015, 2023)
+    with pytest.raises(ValueError):
+        out[0] = 0.0
 
 # ── imbie_rate / imbie_timeseries ─────────────────────────────────────────
 

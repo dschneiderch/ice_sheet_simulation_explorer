@@ -5,6 +5,8 @@ the Render free-tier memory budget intact); checked against the notebook's
 statsmodels results (see the verification notes in the redesign plan).
 """
 
+from functools import lru_cache
+
 import numpy as np
 import scipy.stats
 from scipy.stats import linregress
@@ -19,17 +21,16 @@ _PUB = RUNS["publication"].to_numpy()
 _GROUP = RUNS["group"].to_numpy()
 
 
-def run_rates(lo, hi, run_id=RUN_ID, years=RUN_YEARS, vals=RUN_VALS, n_runs=len(RUNS)):
+def stacked_rates(lo, hi, run_id, years, vals, n_runs):
     """Per-run rate (Gt/yr) over [lo, hi] inclusive -- the same window
     semantics as the original app's _rows_for_window. NaN where a run has
     fewer than 2 points in the window.
 
     All runs are fitted at once from data.py's stacked layout: run_id[k] is
-    the run point k belongs to, so runs may differ in length and time step.
-    Each run's rate equals scipy.stats.linregress on its own windowed points
-    (checked in tests/test_analysis.py). Defaults are the bundled runs;
-    user_data.rates and the tests pass their own. Cheap enough (a few ms)
-    that it isn't cached."""
+    the run (0..n_runs-1) point k belongs to, so runs may differ in length
+    and time step. Each run's rate equals scipy.stats.linregress on its own
+    windowed points (checked in tests/test_analysis.py). Used for the
+    bundled runs (run_rates) and for uploads (user_data.rates)."""
     m = (years >= lo) & (years <= hi)
     rid, x, y = run_id[m], years[m], vals[m]
     cnt = np.bincount(rid, minlength=n_runs)
@@ -39,6 +40,17 @@ def run_rates(lo, hi, run_id=RUN_ID, years=RUN_YEARS, vals=RUN_VALS, n_runs=len(
         sxx = np.bincount(rid, xd * xd, n_runs)
         out = np.bincount(rid, xd * yd, n_runs) / sxx
     out[(cnt < 2) | (sxx == 0)] = np.nan
+    return out
+
+
+@lru_cache(maxsize=64)
+def run_rates(lo, hi):
+    """stacked_rates for the bundled runs, one per RUNS row. Cached so a
+    window a visitor returns to costs nothing (~4 ms otherwise); at most 64
+    windows x 13,902 floats, ~7 MB. Read-only, since every request shares
+    the cached array."""
+    out = stacked_rates(lo, hi, RUN_ID, RUN_YEARS, RUN_VALS, len(RUNS))
+    out.setflags(write=False)
     return out
 
 
